@@ -232,8 +232,64 @@ st.set_page_config(
     layout="wide"
 )
 
-# Replace the quick search section in your code with this expandable version:
+# API Key Management - Add this after st.set_page_config()
+def check_api_key():
+    """Check if API key is available and prompt user if needed."""
+    # Try to get API key from secrets first (for private branch)
+    try:
+        if hasattr(st, 'secrets') and st.secrets.get("jsearch", {}).get("api_key"):
+            st.session_state["jsearch_api_key"] = st.secrets["jsearch"]["api_key"]
+            return True
+    except (FileNotFoundError, KeyError):
+        pass
+    
+    # If no secret, check session state
+    if st.session_state.get("jsearch_api_key"):
+        return True
+    
+    # Show API key input in sidebar
+    st.sidebar.markdown("### 🔑 API Configuration")
+    st.sidebar.info("Enter your JSearch API key to search for jobs")
+    
+    api_key_input = st.sidebar.text_input(
+        "JSearch API Key",
+        type="password",
+        placeholder="Enter your JSearch API key",
+        help="Get your API key from RapidAPI JSearch",
+        key="api_key_input"
+    )
+    
+    if api_key_input:
+        if api_key_input.strip():
+            st.session_state["jsearch_api_key"] = api_key_input.strip()
+            st.sidebar.success("✅ API key saved!")
+            st.rerun()
+        else:
+            st.sidebar.error("❌ API key cannot be empty")
+    else:
+        st.sidebar.markdown("👆 **API key required to continue**")
+    
+    return False
 
+# Check API key availability
+has_api_key = check_api_key()
+
+# If no API key, show message and disable main functionality
+if not has_api_key:
+    st.title("🎯 AI/CS Entry-Level & Internship Finder")
+    st.error("🔑 **API Key Required**: Please enter your JSearch API key in the sidebar to continue.")
+    st.markdown("### How to get your API key:")
+    st.markdown("""
+    1. Go to [RapidAPI JSearch](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch)
+    2. Sign up for a free account
+    3. Subscribe to the free tier (1000 requests/month)
+    4. Copy your API key from the dashboard
+    5. Paste it in the sidebar input above
+    """)
+    st.info("💡 Your API key is stored securely in your browser session and never saved permanently.")
+    st.stop()
+
+# Rest of your existing code continues here...
 # Main title
 st.title("🎯 AI/CS Entry-Level & Internship Finder")
 st.markdown("Find internships, entry-level roles, and new grad positions in AI, ML, Data Science, and Software Engineering")
@@ -515,7 +571,7 @@ if submitted:
                         search_terms += " remote"
                     
                     full_query = f"{keyword.strip()} {search_terms}"
-                    jobs_df = scrape_indeed(full_query, location.strip())
+                    jobs_df = scrape_indeed(full_query, location.strip(), st.session_state.get("jsearch_api_key"))
                     
                     # Add query flag to identify job type
                     if not jobs_df.empty:
