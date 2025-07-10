@@ -6,17 +6,17 @@ import dotenv
 
 dotenv.load_dotenv()
 
-def scrape_indeed(keyword: str, location: str = "") -> pd.DataFrame:
+def scrape_indeed(keyword: str, location: str = "", api_key: str = None) -> pd.DataFrame:
     """
     Search job listings using JSearch API from RapidAPI.
     
     Args:
         keyword (str): Job search keyword
         location (str): Location to search in (optional)
+        api_key (str): JSearch API key (required)
     
     Returns:
-        pd.DataFrame: DataFrame containing job listings with columns:
-                     ['Job Title', 'Company', 'Location', 'Description', 'Apply Link', 'Job Type', 'Posting Date']
+        pd.DataFrame: DataFrame containing job listings
     """
     
     # Create empty DataFrame with correct columns
@@ -24,10 +24,9 @@ def scrape_indeed(keyword: str, location: str = "") -> pd.DataFrame:
     jobs_df = pd.DataFrame(columns=columns)
     
     try:
-        # Get API key from environment
-        api_key = os.getenv('RAPIDAPI_KEY')
+        # Validate API key is provided
         if not api_key:
-            raise Exception("RAPIDAPI_KEY not found in environment variables")
+            raise Exception("API key is required but not provided")
         
         # Construct search query - combine keyword and location if provided
         query = keyword
